@@ -22,6 +22,7 @@
           <el-option label="业务员" value="sales" />
           <el-option label="产品配置员" value="product_manager" />
           <el-option label="管理员" value="admin" />
+          <el-option label="财务" value="finance" />
         </el-select>
       </el-form-item>
       <el-form-item label="订单ID字段">
@@ -58,7 +59,14 @@ const editForm = reactive({
   is_active: true
 });
 
-const mapRole = (role) => (role === "sales" ? "业务员" : role === "product_manager" ? "产品配置员" : "管理员");
+const mapRole = (role) =>
+  role === "sales"
+    ? "业务员"
+    : role === "product_manager"
+      ? "产品配置员"
+      : role === "finance"
+        ? "财务"
+        : "管理员";
 
 const loadAccounts = async () => {
   const { data } = await axios.get("/api/admin/users");

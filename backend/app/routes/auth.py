@@ -32,7 +32,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 
 @router.post("/register", response_model=UserRead)
 def register(payload: UserCreate, db: Session = Depends(get_db)):
-    if payload.role not in {"sales", "product_manager"}:
+    if payload.role not in {"sales", "product_manager", "finance"}:
         raise HTTPException(status_code=400, detail="非法角色")
     existing = db.query(User).filter(User.username == payload.username).first()
     if existing:

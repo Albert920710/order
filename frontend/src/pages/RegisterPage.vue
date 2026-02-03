@@ -13,6 +13,7 @@
           <el-select v-model="form.role" placeholder="选择角色">
             <el-option label="业务员" value="sales" />
             <el-option label="产品配置员" value="product_manager" />
+            <el-option label="财务" value="finance" />
           </el-select>
         </el-form-item>
         <el-form-item>

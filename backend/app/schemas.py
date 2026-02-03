@@ -70,7 +70,7 @@ class ProductImageRead(BaseModel):
 class ProductAttributeOptionRead(BaseModel):
     id: int
     label: str
-    price_delta: float
+    price_delta: Optional[float]
     image_url: Optional[str]
     is_default: bool = False
 
@@ -94,7 +94,7 @@ class ProductRead(BaseModel):
     short_description: Optional[str]
     brand: Optional[str]
     material: Optional[str]
-    base_price: float
+    base_price: Optional[float]
     remark_enabled: bool
     distributor_enabled: bool
     custom_order_code_enabled: bool
@@ -111,7 +111,7 @@ class ProductCreate(BaseModel):
     short_description: Optional[str] = None
     brand: Optional[str] = None
     material: Optional[str] = None
-    base_price: float
+    base_price: Optional[float] = 0
     category_id: Optional[int] = None
     remark_enabled: bool = True
     distributor_enabled: bool = True
@@ -136,13 +136,15 @@ class ProductImagePayload(BaseModel):
 
 
 class ProductAttributeOptionPayload(BaseModel):
+    id: Optional[int] = None
     label: str
-    price_delta: float = 0
+    price_delta: Optional[float] = 0
     image_url: Optional[str] = None
     is_default: bool = False
 
 
 class ProductAttributePayload(BaseModel):
+    id: Optional[int] = None
     name: str
     sort_order: int = 0
     options: List[ProductAttributeOptionPayload] = []
@@ -211,6 +213,32 @@ class OperationLogRead(BaseModel):
     action: str
     detail: Optional[str]
     created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class CustomerBase(BaseModel):
+    name: str
+    country: str
+    customer_type: str
+
+
+class CustomerCreate(CustomerBase):
+    assigned_user_ids: Optional[List[int]] = []
+
+
+class CustomerUpdate(BaseModel):
+    name: Optional[str] = None
+    country: Optional[str] = None
+    customer_type: Optional[str] = None
+    assigned_user_ids: Optional[List[int]] = None
+
+
+class CustomerRead(CustomerBase):
+    id: int
+    full_name: str
+    assigned_users: List[SalesRead] = []
 
     class Config:
         from_attributes = True
