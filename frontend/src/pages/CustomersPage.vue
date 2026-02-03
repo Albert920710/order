@@ -22,6 +22,12 @@
       <el-table-column prop="country" label="国家" width="100" />
       <el-table-column prop="customerTypeLabel" label="客户类型" width="160" />
       <el-table-column prop="assignedLabel" label="分配业务员" />
+      <el-table-column label="操作" width="140">
+        <template #default="{ row }">
+          <el-button type="primary" text @click="openEdit(row)">查看</el-button>
+          <el-button type="danger" text @click="removeCustomer(row)">删除</el-button>
+        </template>
+      </el-table-column>
     </el-table>
   </div>
 
@@ -56,6 +62,42 @@
       <el-button type="primary" @click="saveCustomer">保存</el-button>
     </template>
   </el-dialog>
+
+  <el-dialog v-model="editVisible" title="客户详情" width="520px">
+    <el-form :model="editForm" label-width="120px">
+      <el-form-item label="客户名">
+        <el-input v-model="editForm.name" placeholder="客户名" />
+      </el-form-item>
+      <el-form-item label="国家缩写">
+        <el-input v-model="editForm.country" placeholder="如 CA / RU" />
+      </el-form-item>
+      <el-form-item label="客户类型">
+        <el-select v-model="editForm.customer_type" placeholder="选择类型">
+          <el-option label="渠道代理商 (Distributor/Agent)" value="distributor_agent" />
+          <el-option label="直客/个人 (Direct/Personal)" value="direct_personal" />
+          <el-option label="内部账户 (Internal)" value="internal" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="分配业务员">
+        <el-select v-model="editForm.assigned_user_ids" multiple placeholder="选择业务员">
+          <el-option
+            v-for="salesUser in salesUsers"
+            :key="salesUser.id"
+            :label="salesUser.name || salesUser.username"
+            :value="salesUser.id"
+          />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="客户全称">
+        <el-input :model-value="editFullName" disabled />
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="editVisible = false">取消</el-button>
+      <el-button type="danger" @click="removeCustomer(editForm)">删除</el-button>
+      <el-button type="primary" @click="updateCustomer">保存</el-button>
+    </template>
+  </el-dialog>
 </template>
 
 <script setup>
@@ -68,8 +110,16 @@ const salesUsers = ref([]);
 const selected = ref([]);
 const keyword = ref("");
 const dialogVisible = ref(false);
+const editVisible = ref(false);
 const tableRef = ref(null);
 const form = reactive({
+  name: "",
+  country: "",
+  customer_type: "distributor_agent",
+  assigned_user_ids: []
+});
+const editForm = reactive({
+  id: null,
   name: "",
   country: "",
   customer_type: "distributor_agent",
@@ -105,6 +155,14 @@ const resetForm = () => {
   form.assigned_user_ids = [];
 };
 
+const resetEditForm = () => {
+  editForm.id = null;
+  editForm.name = "";
+  editForm.country = "";
+  editForm.customer_type = "distributor_agent";
+  editForm.assigned_user_ids = [];
+};
+
 const saveCustomer = async () => {
   if (!form.name || !form.country) {
     ElMessage.warning("请填写客户名与国家缩写");
@@ -122,8 +180,45 @@ const saveCustomer = async () => {
   await loadCustomers();
 };
 
+const openEdit = (row) => {
+  editForm.id = row.id;
+  editForm.name = row.name;
+  editForm.country = row.country;
+  editForm.customer_type = row.customer_type;
+  editForm.assigned_user_ids = (row.assigned_users || []).map((user) => user.id);
+  editVisible.value = true;
+};
+
+const updateCustomer = async () => {
+  if (!editForm.name || !editForm.country) {
+    ElMessage.warning("请填写客户名与国家缩写");
+    return;
+  }
+  await axios.put(`/api/customers/${editForm.id}`, {
+    name: editForm.name,
+    country: editForm.country,
+    customer_type: editForm.customer_type,
+    assigned_user_ids: editForm.assigned_user_ids
+  });
+  ElMessage.success("客户已更新");
+  editVisible.value = false;
+  resetEditForm();
+  await loadCustomers();
+};
+
 const toggleSelectAll = () => {
   tableRef.value?.toggleAllSelection();
+};
+
+const removeCustomer = async (row) => {
+  if (!row?.id) return;
+  await axios.delete(`/api/customers/${row.id}`);
+  ElMessage.success("客户已删除");
+  if (editVisible.value && editForm.id === row.id) {
+    editVisible.value = false;
+    resetEditForm();
+  }
+  await loadCustomers();
 };
 
 const deleteSelected = async () => {
@@ -143,6 +238,11 @@ const filteredCustomers = computed(() => {
       customer.name.includes(keyword.value) ||
       customer.country.includes(keyword.value)
   );
+});
+
+const editFullName = computed(() => {
+  if (!editForm.name || !editForm.country) return "";
+  return `${editForm.name}_${editForm.country.toUpperCase()}`;
 });
 
 onMounted(async () => {
