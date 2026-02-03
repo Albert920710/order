@@ -1,13 +1,35 @@
 from datetime import datetime
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from ..auth import require_role
 from ..database import get_db
-from ..models import OperationLog, Order, OrderItem, Product, ProductAttributeOption, User
+from ..models import Customer, OperationLog, Order, OrderItem, Product, ProductAttributeOption, User
 from ..schemas import OrderCreate, OrderRead, OrderUpdate
 
 router = APIRouter(prefix="/api/orders", tags=["orders"])
+
+
+def mask_order_prices(orders: list[Order]) -> list[Order]:
+    for order in orders:
+        if order.product:
+            order.product.base_price = None
+            for attribute in order.product.attributes:
+                for option in attribute.options:
+                    option.price_delta = None
+    return orders
+
+
+def validate_distributor(db: Session, user: User, distributor: Optional[str]) -> Optional[str]:
+    if not distributor:
+        return None
+    customer = db.query(Customer).filter(Customer.full_name == distributor).first()
+    if not customer:
+        raise HTTPException(status_code=400, detail="客户不存在")
+    if user.role == "sales" and customer not in user.assigned_customers:
+        raise HTTPException(status_code=403, detail="无权限选择该客户")
+    return distributor
 
 
 def build_order_code(db: Session, user: User, product: Product) -> str:
@@ -37,7 +59,10 @@ def build_order_code(db: Session, user: User, product: Product) -> str:
 @router.get("", response_model=list[OrderRead])
 def list_orders(db: Session = Depends(get_db), user=Depends(require_role("sales", "admin"))):
     query = db.query(Order).filter(Order.sales_id == user.id) if user.role == "sales" else db.query(Order)
-    return query.order_by(Order.created_at.desc()).all()
+    orders = query.order_by(Order.created_at.desc()).all()
+    if user.role not in {"admin", "finance"}:
+        return mask_order_prices(orders)
+    return orders
 
 
 @router.post("", response_model=OrderRead)
@@ -57,13 +82,14 @@ def create_order(payload: OrderCreate, db: Session = Depends(get_db), user=Depen
     remark_image_url = payload.remark_image_url
     if payload.remark_images:
         remark_image_url = ",".join(payload.remark_images)
+    distributor = validate_distributor(db, user, payload.distributor)
     order = Order(
         order_code=build_order_code(db, user, product),
         sales_id=user.id,
         product_id=product.id,
         qty=payload.qty,
         total_price=total_price,
-        distributor=payload.distributor,
+        distributor=distributor,
         custom_order_code=payload.custom_order_code,
         remark_text=payload.remark_text,
         remark_image_url=remark_image_url,
@@ -103,7 +129,7 @@ def update_order(order_id: int, payload: OrderUpdate, db: Session = Depends(get_
     if payload.qty is not None:
         order.qty = payload.qty
     if payload.distributor is not None:
-        order.distributor = payload.distributor
+        order.distributor = validate_distributor(db, user, payload.distributor)
     if payload.custom_order_code is not None:
         order.custom_order_code = payload.custom_order_code
     if payload.remark_text is not None:

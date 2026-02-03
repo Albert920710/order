@@ -112,7 +112,14 @@
           </div>
           <div v-if="selectedProduct.distributor_enabled || selectedProduct.custom_order_code_enabled" style="margin-top:12px">
             <div v-if="selectedProduct.distributor_enabled" style="margin-bottom:8px">
-              <el-input v-model="distributor" placeholder="代理商" />
+              <el-select v-model="distributor" placeholder="选择客户" filterable>
+                <el-option
+                  v-for="customer in customers"
+                  :key="customer.id"
+                  :label="customer.full_name"
+                  :value="customer.full_name"
+                />
+              </el-select>
             </div>
             <div v-if="selectedProduct.custom_order_code_enabled" style="margin-bottom:8px">
               <el-input v-model="customOrderCode" placeholder="自定义订单号" />
@@ -192,6 +199,7 @@ const searchError = ref("");
 const optionLimit = 10;
 const searchExpanded = ref(false);
 const selectedSearchOptions = ref([]);
+const customers = ref([]);
 
 const productList = ref([]);
 const productMatches = ref([]);
@@ -459,9 +467,15 @@ const loadProducts = async () => {
   }
 };
 
+const loadCustomers = async () => {
+  const { data } = await axios.get("/api/customers/assigned");
+  customers.value = data;
+};
+
 onMounted(async () => {
   await loadOrdersCount();
   await loadProducts();
+  await loadCustomers();
 });
 </script>
 

@@ -29,6 +29,32 @@ CREATE TABLE `categories`  (
 ) ENGINE = MyISAM AUTO_INCREMENT = 5 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
+-- Table structure for customers
+-- ----------------------------
+DROP TABLE IF EXISTS `customers`;
+CREATE TABLE `customers`  (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `country` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `customer_type` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `full_name` varchar(160) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `full_name`(`full_name`) USING BTREE
+) ENGINE = MyISAM AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for customer_assignments
+-- ----------------------------
+DROP TABLE IF EXISTS `customer_assignments`;
+CREATE TABLE `customer_assignments`  (
+  `customer_id` int NOT NULL,
+  `user_id` int NOT NULL,
+  PRIMARY KEY (`customer_id`, `user_id`) USING BTREE,
+  INDEX `idx_customer_assignments_user_id`(`user_id`) USING BTREE
+) ENGINE = MyISAM CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
 -- Table structure for operation_logs
 -- ----------------------------
 DROP TABLE IF EXISTS `operation_logs`;
