@@ -36,7 +36,7 @@
           <el-button @click="categoryDialog = true">新建分类</el-button>
         </div>
       </div>
-      <div class="section-box">
+      <div class="section-box" v-if="canViewPrice">
         <h3>基础价格</h3>
         <el-input-number v-model="form.basePrice" :min="0" />
       </div>
@@ -73,7 +73,7 @@
                 <el-button type="danger" text @click="removeOption(attribute, option)">删除</el-button>
               </div>
               <el-input v-model="option.label" placeholder="选项" />
-              <el-input-number v-model="option.price" :min="0" style="margin-top:8px" />
+              <el-input-number v-if="canViewPrice" v-model="option.price" :min="0" style="margin-top:8px" />
               <el-checkbox v-model="option.isDefault" style="margin-top:8px">默认选中</el-checkbox>
               <el-upload
                 list-type="picture-card"
@@ -128,6 +128,7 @@ import { ElMessage } from "element-plus";
 import axios from "axios";
 import { Plus } from "@element-plus/icons-vue";
 import { useRoute, useRouter } from "vue-router";
+import { useAuthStore } from "../stores/auth";
 
 const categoryDialog = ref(false);
 const newCategory = ref("");
@@ -139,6 +140,7 @@ const attributeDragIndex = ref(null);
 let optionUid = 0;
 const createOption = (overrides = {}) => ({
   uid: optionUid++,
+  id: null,
   label: "",
   price: 0,
   imageUrl: "",
@@ -148,6 +150,8 @@ const createOption = (overrides = {}) => ({
 });
 const route = useRoute();
 const router = useRouter();
+const auth = useAuthStore();
+const canViewPrice = computed(() => ["admin", "finance"].includes(auth.role));
 const productId = computed(() => route.params.id);
 const submitLabel = computed(() => (productId.value ? "保存" : "发布"));
 const form = reactive({
@@ -250,6 +254,9 @@ const submitProduct = async () => {
     distributor_enabled: Boolean(form.distributorEnabled),
     custom_order_code_enabled: Boolean(form.customOrderCodeEnabled)
   };
+  if (!canViewPrice.value) {
+    delete payload.base_price;
+  }
   let targetId = productId.value;
   if (targetId) {
     await axios.put(`/api/products/${targetId}`, payload);
@@ -265,12 +272,13 @@ const submitProduct = async () => {
     attributes: form.attributes.map((attribute, index) => ({
       name: attribute.name,
       sort_order: index,
-      options: attribute.options.map((option) => ({
-        label: option.label,
-        price_delta: option.price || 0,
-        image_url: option.imageUrl || null,
-        is_default: option.isDefault
-      }))
+        options: attribute.options.map((option) => ({
+          id: option.id || null,
+          label: option.label,
+          price_delta: option.price || 0,
+          image_url: option.imageUrl || null,
+          is_default: option.isDefault
+        }))
     }))
   });
   ElMessage.success(targetId && productId.value ? "产品已保存" : "产品已创建");
@@ -336,6 +344,7 @@ const loadProduct = async () => {
     name: attribute.name,
     options: (attribute.options || []).map((option) => ({
       ...createOption({
+        id: option.id || null,
         label: option.label,
         price: option.price_delta || 0,
         imageUrl: option.image_url || "",

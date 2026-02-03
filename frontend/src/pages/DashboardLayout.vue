@@ -14,6 +14,7 @@
         </router-link>
         <router-link to="/app/products/new" v-if="role !== 'sales'">新建产品</router-link>
         <router-link to="/app/categories" v-if="role !== 'sales'">分类管理</router-link>
+        <router-link to="/app/customers" v-if="role === 'admin' || role === 'finance'">客户管理</router-link>
         <router-link to="/app/accounts" v-if="role === 'admin'">账号管理</router-link>
         <router-link to="/app/admin" v-if="role === 'admin'">管理员中心</router-link>
       </div>

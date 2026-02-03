@@ -15,7 +15,7 @@
       <el-table-column type="selection" width="50" />
       <el-table-column prop="title" label="产品" />
       <el-table-column prop="categoryName" label="分类" width="160" />
-      <el-table-column prop="base_price" label="基础价格" width="120" />
+      <el-table-column v-if="canViewPrice" prop="base_price" label="基础价格" width="120" />
       <el-table-column label="操作" width="120">
         <template #default>
           <el-button type="primary" text>查看</el-button>
@@ -30,12 +30,15 @@ import { computed, onMounted, ref } from "vue";
 import { ElMessage } from "element-plus";
 import axios from "axios";
 import { useRouter } from "vue-router";
+import { useAuthStore } from "../stores/auth";
 
 const router = useRouter();
+const auth = useAuthStore();
 const products = ref([]);
 const keyword = ref("");
 const selected = ref([]);
 const tableRef = ref(null);
+const canViewPrice = computed(() => ["admin", "finance"].includes(auth.role));
 
 const goDetail = (row) => {
   if (!row?.id) return;

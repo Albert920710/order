@@ -11,6 +11,7 @@ import ProductBuilder from "../pages/ProductBuilder.vue";
 import CategoriesPage from "../pages/CategoriesPage.vue";
 import AdminPanel from "../pages/AdminPanel.vue";
 import AccountManagement from "../pages/AccountManagement.vue";
+import CustomersPage from "../pages/CustomersPage.vue";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -29,6 +30,7 @@ const router = createRouter({
         { path: "products/new", component: ProductBuilder },
         { path: "products/:id", component: ProductBuilder },
         { path: "categories", component: CategoriesPage },
+        { path: "customers", component: CustomersPage },
         { path: "admin", component: AdminPanel },
         { path: "accounts", component: AccountManagement }
       ]

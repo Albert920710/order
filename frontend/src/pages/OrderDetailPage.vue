@@ -25,7 +25,14 @@
         </div>
       </div>
       <div v-if="order?.distributorEnabled" style="margin-top:12px">
-        <el-input v-model="distributor" placeholder="代理商" />
+        <el-select v-model="distributor" placeholder="选择客户" filterable>
+          <el-option
+            v-for="customer in customerOptions"
+            :key="customer.id"
+            :label="customer.full_name"
+            :value="customer.full_name"
+          />
+        </el-select>
       </div>
       <div v-if="order?.customOrderCodeEnabled" style="margin-top:12px">
         <el-input v-model="customOrderCode" placeholder="自定义订单号" />
@@ -63,9 +70,11 @@ import { ElMessage } from "element-plus";
 import axios from "axios";
 import { useRoute, useRouter } from "vue-router";
 import { Plus } from "@element-plus/icons-vue";
+import { useAuthStore } from "../stores/auth";
 
 const route = useRoute();
 const router = useRouter();
+const auth = useAuthStore();
 const order = ref(null);
 const qty = ref(1);
 const distributor = ref("");
@@ -73,9 +82,18 @@ const customOrderCode = ref("");
 const remarkText = ref("");
 const remarkFiles = ref([]);
 const selectedOptions = ref({});
+const customers = ref([]);
+const canViewPrice = computed(() => ["admin", "finance"].includes(auth.role));
+const customerOptions = computed(() => {
+  if (!distributor.value) return customers.value;
+  const exists = customers.value.some((item) => item.full_name === distributor.value);
+  if (exists) return customers.value;
+  return [{ id: "current", full_name: distributor.value }, ...customers.value];
+});
 
 const totalPrice = computed(() => {
   if (!order.value) return 0;
+  if (!canViewPrice.value) return order.value.totalPrice || 0;
   const base = order.value.basePrice || 0;
   const options = order.value.attributes
     .map((attribute) => attribute.options.find((option) => option.id === selectedOptions.value[attribute.id]))
@@ -98,6 +116,7 @@ const loadOrder = async () => {
     brand: found.product?.brand,
     category: found.product?.category?.name,
     basePrice: found.product?.base_price || 0,
+    totalPrice: found.total_price || 0,
     mainImage: found.product?.images?.find((img) => img.is_primary)?.image_url || found.product?.images?.[0]?.image_url || "",
     attributes: found.product?.attributes || [],
     distributorEnabled: found.product?.distributor_enabled ?? true,
@@ -119,6 +138,11 @@ const loadOrder = async () => {
       selectedOptions.value[attribute.id] = option.id;
     }
   });
+};
+
+const loadCustomers = async () => {
+  const { data } = await axios.get("/api/customers/assigned");
+  customers.value = data;
 };
 
 const save = async () => {
@@ -154,5 +178,8 @@ const handleRemarkRemove = (file) => {
   remarkFiles.value = remarkFiles.value.filter((item) => item.url !== file.url);
 };
 
-onMounted(loadOrder);
+onMounted(async () => {
+  await loadCustomers();
+  await loadOrder();
+});
 </script>

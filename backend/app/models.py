@@ -8,6 +8,7 @@ from sqlalchemy import (
     String,
     Text,
     Float,
+    Table,
 )
 from sqlalchemy.orm import relationship
 from .database import Base
@@ -29,6 +30,17 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     orders = relationship("Order", back_populates="sales")
+    assigned_customers = relationship(
+        "Customer", secondary="customer_assignments", back_populates="assigned_users"
+    )
+
+
+customer_assignments = Table(
+    "customer_assignments",
+    Base.metadata,
+    Column("customer_id", Integer, ForeignKey("customers.id"), primary_key=True),
+    Column("user_id", Integer, ForeignKey("users.id"), primary_key=True),
+)
 
 
 class Category(Base):
@@ -98,6 +110,21 @@ class ProductAttributeOption(Base):
     is_default = Column(Boolean, default=False)
 
     attribute = relationship("ProductAttribute", back_populates="options")
+
+
+class Customer(Base):
+    __tablename__ = "customers"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(120), nullable=False)
+    country = Column(String(20), nullable=False)
+    customer_type = Column(String(40), nullable=False)
+    full_name = Column(String(160), unique=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    assigned_users = relationship(
+        "User", secondary="customer_assignments", back_populates="assigned_customers"
+    )
 
 
 class Order(Base):

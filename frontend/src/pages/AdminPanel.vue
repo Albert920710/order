@@ -64,7 +64,14 @@ const loadUsers = async () => {
   const { data } = await axios.get("/api/admin/users");
   users.value = data.map((user) => ({
     ...user,
-    roleLabel: user.role === "sales" ? "业务员" : user.role === "product_manager" ? "产品配置员" : "管理员",
+    roleLabel:
+      user.role === "sales"
+        ? "业务员"
+        : user.role === "product_manager"
+          ? "产品配置员"
+          : user.role === "finance"
+            ? "财务"
+            : "管理员",
     approvedLabel: user.is_approved ? "已通过" : "待审核"
   }));
 };
